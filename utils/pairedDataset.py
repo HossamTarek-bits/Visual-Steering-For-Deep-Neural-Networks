@@ -1,5 +1,4 @@
 import random
-from kornia.filters import motion_blur
 import torch
 from torch.utils.data import Dataset
 from PIL import Image
@@ -32,6 +31,12 @@ class PairedImageFolder(Dataset):
         image_folder,
         mask_folder,
         rotation_degrees=30,
+        random_rotation=False,
+        random_rotation_p=0.5,
+        random_horizontal_flip=False,
+        random_horizontal_flip_p=0.5,
+        random_vertical_flip=False,
+        random_vertical_flip_p=0.5,
         image_size=(224, 224),
         crop_size=(224, 224),
         grayscale=False,
@@ -53,12 +58,16 @@ class PairedImageFolder(Dataset):
         noise=False,
         noise_p=0.5,
         noise_sigma=25.0,
-        motion_blur=False,
-        motion_blur_p=0.5,
     ):
         self.images_dataset = ImageFolder(image_folder)
         self.masks_dataset = ImageFolder(mask_folder)
         self.rotation_degrees = rotation_degrees
+        self.random_rotation = random_rotation
+        self.random_rotation_p = random_rotation_p
+        self.random_horizontal_flip = random_horizontal_flip
+        self.random_horizontal_flip_p = random_horizontal_flip_p
+        self.random_vertical_flip = random_vertical_flip
+        self.random_vertical_flip_p = random_vertical_flip_p
         self.image_size = image_size
         self.grayscale = grayscale
         self.normalize = normalize
@@ -81,8 +90,6 @@ class PairedImageFolder(Dataset):
         self.noise_p = noise_p
         self.noise_sigma = noise_sigma
         self.noise_random_sigma = noise_random_sigma
-        self.motion_blur = motion_blur
-        self.motion_blur_p = motion_blur_p
         assert len(self.images_dataset) == len(
             self.masks_dataset
         ), "Number of images and masks must be the same"
@@ -150,6 +157,7 @@ class PairedImageFolder(Dataset):
         mask = mask.resize(self.image_size, resample=Image.BILINEAR)
         if self.grayscale:
             image = to_grayscale(image, num_output_channels=self.num_output_channels)
+        image = to_tensor(image) if type(image) != torch.Tensor else image
         if self.center_crop:
             image = center_crop(image, self.crop_size)
             mask = center_crop(mask, self.crop_size)
@@ -178,25 +186,6 @@ class PairedImageFolder(Dataset):
             image = adjust_sharpness(image, random.uniform(0.8, 1.2))
         # Convert image and mask to tensors
 
-        if self.motion_blur and random.random() < self.motion_blur_p:
-            kernal_size = random.randint(3, 25) // 2 * 2 + 1
-            angle = random.randint(0, 360)
-            direction = random.randint(-1, 1)
-            if type(image) != torch.Tensor:
-                image = to_tensor(image)
-                mask = to_tensor(mask)
-                image = motion_blur(image.unsqueeze(0), kernal_size, angle, direction)
-                mask = motion_blur(mask.unsqueeze(0), kernal_size, angle, direction)
-                image = to_pil_image(image.squeeze(0))
-                mask = to_pil_image(mask.squeeze(0))
-            else:
-                image = motion_blur(
-                    image.unsqueeze(0), kernal_size, angle, direction
-                ).squeeze(0)
-                mask = motion_blur(
-                    mask.unsqueeze(0), kernal_size, angle, direction
-                ).squeeze(0)
-
         if self.noise and random.random() < self.noise_p:
             image = self.gauss_noise_tensor(
                 to_tensor(image) if type(image) != torch.Tensor else image,
@@ -205,19 +194,23 @@ class PairedImageFolder(Dataset):
                 else self.noise_sigma,
             )
         # Horizontal flip
-        if random.random() < 0.5:
+        if (
+            self.random_horizontal_flip
+            and random.random() < self.random_horizontal_flip_p
+        ):
             image = hflip(image)
             mask = hflip(mask)
 
         # Vertical flip
-        # if random.random() < 0.5:
-        #     image = vflip(image)
-        #     mask = vflip(mask)
+        if self.random_vertical_flip and random.random() < self.random_vertical_flip_p:
+            image = vflip(image)
+            mask = vflip(mask)
 
         # Rotation
-        # angle = random.uniform(-self.rotation_degrees, self.rotation_degrees)
-        # image = rotate(image, angle)
-        # mask = rotate(mask, angle)
+        if self.random_rotation and random.random() < self.random_rotation_p:
+            angle = random.uniform(-self.rotation_degrees, self.rotation_degrees)
+            image = rotate(image, angle)
+            mask = rotate(mask, angle)
         if self.perspective:
             image, mask = self.get_random_perspective(
                 image if type(image) == torch.Tensor else to_tensor(image),

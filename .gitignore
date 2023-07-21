@@ -1,4 +1,9 @@
 # Byte-compiled / optimized / DLL files
+imagenette2
+imagenette2All
+BUSI
+ISIC
+results
 __pycache__/
 *.py[cod]
 *$py.class
