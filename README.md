@@ -13,16 +13,14 @@ The proposed approach is divided into 3 stages: explaining the model, manually e
 
 ## Datasets
 We applied this approach on 3 datasets:
-Imagenette2
-Breast Cancer Ultrasound Images (BUSI)
-International Skin Imaging Collaboration (ISIC)
-
-![BUSI](./figures/attention_maps_diagram_BUSI.png)
-![imagenette2](./figures/attention_maps_diagram_imagenette.png)
+- Imagenette2
+- Breast Cancer Ultrasound Images (BUSI)
+- International Skin Imaging Collaboration (ISIC)
+![results](./figures/results.png)
 
 ## Models
 We applied this approach on several models from the ResNet family:
-ResNet50
-ResNet101
-ResNet152
+- ResNet50
+- ResNet101
+- ResNet152
 
