@@ -7,12 +7,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import captum
 import tqdm
-import torch.optim as optim
 from utils import (
     PairedImageFolder,
     AverageMeter,
     seed_everything,
-    EarlyStopping,
     get_loss,
     get_optimizer,
     losses,
@@ -20,20 +18,21 @@ from utils import (
     models,
     get_model_last_conv,
     change_linear_layer,
+    get_model_last_linear,
 )
 import argparse
 import os
 
 parser = argparse.ArgumentParser(description="Training")
-parser.add_argument("-b", "--batch_size", default=8, type=int)
+parser.add_argument("-b", "--batch_size", default=32, type=int)
 parser.add_argument("-e", "--epochs", default=100, type=int)
-parser.add_argument("-lr", "--learning_rate", default=0.001, type=float)
+parser.add_argument("--lr", default=0.001, type=float)
 parser.add_argument(
     "-m", "--model", default="resnet50", type=str, choices=models.keys()
 )
 parser.add_argument("--pretrained", default=True, type=bool)
 parser.add_argument("--pretrained_weights_path", type=str)
-parser.add_argument("-mp", "--model_path", type=str)
+parser.add_argument("--model_path", type=str)
 parser.add_argument("-s", "--seed", default=42, type=int)
 parser.add_argument(
     "-l", "--loss", default="cross_entropy", type=str, choices=losses.keys()
@@ -43,20 +42,16 @@ parser.add_argument(
 )
 parser.add_argument("--class_weights", nargs="+", type=float)
 parser.add_argument("-n", "--num_classes", default=10, type=int)
-parser.add_argument("-gamma", default=10, type=float)
+parser.add_argument("--gamma", default=10, type=float)
+parser.add_argument("--momentum", default=0.9, type=float, metavar="M", help="momentum")
 parser.add_argument(
-    "-mom", "--momentum", default=0.9, type=float, metavar="M", help="momentum"
-)
-parser.add_argument(
-    "-wd",
     "--weight-decay",
     default=5e-4,
     type=float,
     metavar="W",
-    help="weight decay (default: 1e-4)",
+    help="weight decay (default: 5e-4)",
 )
 parser.add_argument(
-    "-imf",
     "--image_folder",
     default="imagenette2/Images/Train",
     type=str,
@@ -64,7 +59,6 @@ parser.add_argument(
     help="path to train images folder",
 )
 parser.add_argument(
-    "-mf",
     "--mask_folder",
     default="imagenette2/Masks/Train",
     type=str,
@@ -79,7 +73,6 @@ parser.add_argument(
     help="image size (default: (224, 224))",
 )
 parser.add_argument(
-    "-test_imf",
     "--test_image_folder",
     default="imagenette2All/val",
     type=str,
@@ -95,7 +88,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--gpu-id", default="0", type=str, help="id(s) for CUDA_VISIBLE_DEVICES"
+    "--gpu_id", default="0", type=str, help="id(s) for CUDA_VISIBLE_DEVICES"
 )
 
 args = parser.parse_args()
@@ -165,10 +158,13 @@ def training_loop(
         attribution = torch.stack(attribution).unsqueeze(1)
 
         # calculate the attention loss
-        attentionLoss = (
-            F.mse_loss(attribution[masks == 1], masks[masks == 1]) * 0.1
-            + F.mse_loss(attribution, masks) * 0.9
-        )
+        if torch.all(masks == 0):
+            attentionLoss = F.mse_loss(attribution, masks)
+        else:
+            attentionLoss = (
+                F.mse_loss(attribution[masks == 1], masks[masks == 1]) * 0.1
+                + F.mse_loss(attribution, masks) * 0.9
+            )
         # calculate the prediction loss
         predictionLoss = criterion(output, target)
         loss = predictionLoss + attentionLoss * gamma
@@ -304,6 +300,8 @@ def main():
     elif args.pretrained_weights_path is not None:
         model_details = models[args.model]
         model = model_details["model"]()
+        if num_classes != get_model_last_linear(model)[0].out_features:
+            change_linear_layer(model, num_classes)
         model.load_state_dict(torch.load(args.pretrained_weights_path))
     elif args.pretrained:
         model_details = models[args.model]

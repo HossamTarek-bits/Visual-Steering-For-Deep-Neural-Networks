@@ -8,15 +8,66 @@ The proposed approach is divided into 3 stages: explaining the model, manually e
 ![methodology diagram](./figures/methodology_diagram.png)
 
 ## Enviroment
-
+to install the required packages run the following command:
+```bash
+pip install -r requirements.txt
+```
 ## Execution
+to run the code, you need to run the following command:
+```bash
+python Training.py [arguments]
+```
+### Model-related Arguments
 
+| Argument | Description | Default Value |
+|----------|-------------|---------------|
+|-m, --model| Model to train, check parameters.py for the list of supported models| |
+|--pretrained | Use pretrained model's weights from torchvision|True|
+|--pretrained_weights_path | Path to pretrained model's weights| |
+|--model_path | Path to save the trained model (full model not the model weights)| |
+|--gamma | Gamma value of attention loss|10|
+
+### Training-related Arguments
+
+| Argument | Description | Default Value |
+|----------|-------------|---------------|
+|-b, --batch_size| Batch size for training|32|
+|-e, --epochs| Number of epochs for training|100|
+|--lr| Learning rate for training|0.001|
+|-s, --seed | Random seed for reproducibility|42|
+|-l, --loss | Loss function to use, check parameters.py for the list of supported loss functions| |
+|-o, --optimizer | Optimizer to use, check parameters.py for the list of supported optimizers| |
+|--class_weights | Use class weights to balance the loss function| |
+
+### Data-related Arguments
+
+| Argument | Description | Default Value |
+|----------|-------------|---------------|
+|--image_folder | Path to the folder containing the images|imagenette2/Images/Train|
+|--masks_folder | Path to the folder containing the masks|imagenette2/Masks/Train|
+|--image_size | Size of the images|(224,224)|
+|--test_image_folder | Path to the folder containing the test images|imagenette2All/val|
+|-n, --num_classes | Number of classes in the dataset|10|
+
+### Optimizer-related Arguments
+
+| Argument | Description | Default Value |
+|----------|-------------|---------------|
+|--momentum | Momentum value of optimizer for SGD and RMSprop|0.9|
+|--weight_decay | Weight decay value of optimizer|5e-4|
+
+### Other Arguments
+
+| Argument | Description | Default Value |
+|----------|-------------|---------------|
+|--out_path | Path to save the model|results|
+|--gpu_id | Id of the GPU to use|0|
 
 ## Datasets
 We applied this approach on 3 datasets:
-- Imagenette2
-- Breast Cancer Ultrasound Images (BUSI)
-- International Skin Imaging Collaboration (ISIC)
+- [Imagenette2](https://github.com/fastai/imagenette#imagenette-1)
+- [Breast Cancer Ultrasound Images (BUSI)](https://www.kaggle.com/datasets/aryashah2k/breast-ultrasound-images-dataset)
+- [International Skin Imaging Collaboration (ISIC)](https://www.kaggle.com/datasets/nodoubttome/skin-cancer9-classesisic)
 ![results](./figures/results.png)
 
 ## Models
