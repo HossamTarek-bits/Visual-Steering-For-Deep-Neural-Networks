@@ -5,7 +5,7 @@ This repository contains the source code to visually steer the CNN models into a
 [[paper](https://link.springer.com/chapter/10.1007/978-3-031-43247-7_4)]
 
 ## Citation
-If you find this repository useful, please cite the following references.
+If you find this repository useful, please cite the following reference.
 ```bibtex
 @InProceedings{10.1007/978-3-031-43247-7_4,
 author="Elbeialy, Hossam and Ghaith, Arwa and ElBaradei, Mai H. and Alkhodary, Mohamed and Eissa, Alaa M. and Farag, Esraa A. and Fdawey, Omnia and Emad, Noran and Elshenawy, Ahmed and Shabaan, Mariam and Gamal, Marwa",
